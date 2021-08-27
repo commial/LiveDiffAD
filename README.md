@@ -41,6 +41,14 @@ Using cookie from file cookie.bin (132 bytes)
 # Summary for the Schema naming context
 [Summary - CN=Schema,CN=Configuration,DC=WINDOMAIN,DC=LOCAL]
 ...
+
+# Summary for the Forest DNS Zones naming context
+[Summary - DC=ForestDnsZones,DC=WINDOMAIN,DC=LOCAL]
+...
+
+# Summary for the Domain DNS Zones naming context
+[Summary - DC=DomainDnsZones,DC=WINDOMAIN,DC=LOCAL]
+...
 ```
 
 The files `cookies*.bin` are updated at the end of the script, and can be used as a checkpoint after the script termination.
