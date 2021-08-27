@@ -378,12 +378,12 @@ Function Get-ConfigurationNamingContext
         [System.DirectoryServices.Protocols.LdapConnection] $Ldap
     )
 
-    Write-Debug "[$(Get-Date)][Get-DefaultNamingContext] Begin"
+    Write-Debug "[$(Get-Date)][Get-ConfigurationNamingContext] Begin"
     
     $rootDSE = Get-RootDse $Ldap
     Write-Output $rootDSE.configurationnamingcontext
 
-    Write-Debug "[$(Get-Date)][Get-DefaultNamingContext] End"
+    Write-Debug "[$(Get-Date)][Get-ConfigurationNamingContext] End"
 }
 
 Function Get-SchemaNamingContext
@@ -399,6 +399,47 @@ Function Get-SchemaNamingContext
     Write-Output $rootDSE.schemanamingcontext
 
     Write-Debug "[$(Get-Date)][Get-SchemaNamingContext] End"
+}
+
+
+Function Get-ForestDnsZones
+{
+    param(
+        [Parameter(Mandatory = $true)]
+        [System.DirectoryServices.Protocols.LdapConnection] $Ldap
+    )
+
+    Write-Debug "[$(Get-Date)][Get-ForestDnsZones] Begin"
+    
+    $rootDSE = Get-RootDse $Ldap
+    ForEach ($NC in $rootDSE.namingcontexts) {
+        # A bit hack-ish, but not in $rootDSE attributes
+        If ($NC.Contains("ForestDnsZones")) {
+            Write-Output $NC
+        }
+    }
+
+    Write-Debug "[$(Get-Date)][Get-ForestDnsZones] End"
+}
+
+Function Get-DomainDnsZones
+{
+    param(
+        [Parameter(Mandatory = $true)]
+        [System.DirectoryServices.Protocols.LdapConnection] $Ldap
+    )
+
+    Write-Debug "[$(Get-Date)][Get-DomainDnsZones] Begin"
+    
+    $rootDSE = Get-RootDse $Ldap
+    ForEach ($NC in $rootDSE.namingcontexts) {
+        # A bit hack-ish, but not in $rootDSE attributes
+        If ($NC.Contains("DomainDnsZones")) {
+            Write-Output $NC
+        }
+    }
+
+    Write-Debug "[$(Get-Date)][Get-DomainDnsZones] End"
 }
 
 Function New-BindedLdapConnection
@@ -481,6 +522,8 @@ Show-LiveDiff -Server 192.168.1.1 -Credential (Get-Credential -Message "Domain a
     $defaultNC = Get-DefaultNamingContext $ldapConnection
     $configurationNC = Get-ConfigurationNamingContext $ldapConnection
     $schemaNC = Get-SchemaNamingContext $ldapConnection
+    $forestdnsNC = Get-ForestDnsZones $ldapConnection
+    $domaindnsNC = Get-DomainDnsZones $ldapConnection
     $searchScope = [System.DirectoryServices.Protocols.SearchScope]::Subtree
 
     $Infos = [PSCustomObject] @{
@@ -493,11 +536,14 @@ Show-LiveDiff -Server 192.168.1.1 -Credential (Get-Credential -Message "Domain a
     $searchResults += Register-LdapSearch $Infos $defaultNC $searchScope
     $searchResults += Register-LdapSearch $Infos $configurationNC $searchScope
     $searchResults += Register-LdapSearch $Infos $schemaNC $searchScope
+    $searchResults += Register-LdapSearch $Infos $forestdnsNC $searchScope
+    $searchResults += Register-LdapSearch $Infos $domaindnsNC $searchScope
 
     & repadmin /showchanges $Server $defaultNC /cookie:cookie.bin > $null
     & repadmin /showchanges $Server $configurationNC /cookie:cookie-config.bin > $null
     & repadmin /showchanges $Server $schemaNC /cookie:cookie-schema.bin > $null
-
+    & repadmin /showchanges $Server $forestdnsNC /cookie:cookie-forestdns.bin > $null
+    & repadmin /showchanges $Server $domaindnsNC /cookie:cookie-domaindns.bin > $null
 
     Write-Information "Show-LiveDiff (type 'q' to abort, ctrl+c will discard output)..."
 
@@ -519,6 +565,10 @@ Show-LiveDiff -Server 192.168.1.1 -Credential (Get-Credential -Message "Domain a
         repadmin /showchanges $Server $configurationNC /cookie:cookie-config.bin | Out-Host
         Write-Host "[Summary - $schemaNC]"
         repadmin /showchanges $Server $schemaNC /cookie:cookie-schema.bin | Out-Host
+        Write-Host "[Summary - $forestdnsNC]"
+        repadmin /showchanges $Server $forestdnsNC /cookie:cookie-forestdns.bin | Out-Host
+        Write-Host "[Summary - $domaindnsNC]"
+        repadmin /showchanges $Server $domaindnsNC /cookie:cookie-domaindns.bin | Out-Host
     }
 
     Write-Debug "[$(Get-Date)][Show-LiveDiff] End"
