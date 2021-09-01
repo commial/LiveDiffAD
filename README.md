@@ -16,7 +16,7 @@ The script:
 
 ```powershell
 # Import the script
-PS> .\livediff.ps1
+PS> Import-Module .\livediff.ps1
 # Launch the live view
 PS> Show-LiveDiff
 ...
