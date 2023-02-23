@@ -1,4 +1,5 @@
 from argparse import ArgumentParser
+import json
 
 parser = ArgumentParser("Attribute ID conversion")
 parser.add_argument("--attid", help="Attribute ID in the replication metadata (ex: 1234, 0x20001)", type=lambda x: int(x, 0))
@@ -8,6 +9,10 @@ options = parser.parse_args()
 if options.attid is None and options.oid is None:
     parser.print_help()
     exit(0)
+
+# System32/config/systemprofile/AppData/Local/Microsoft/Windows/SchCache/DOMAIN.LOCAL.sch
+json_file = open("attributes_list.json")
+attrib_json = json.load(json_file)
 
 # MS-DRSR, 5.16.4 ATTRTYP-to-OID Conversion
 oid2id = {
@@ -36,8 +41,14 @@ id2oid = {v:k for k, v in oid2id.items()}
     
 if options.attid is not None:
     high_part, low_part = options.attid >> 16, options.attid & 0xFFFF
-    print("%s.%s" % (id2oid[high_part], low_part))
+    oid = "{}.{}".format(id2oid[high_part], low_part)
+    if oid in attrib_json:
+        print("{} - {}".format(oid, attrib_json[oid]))
+    else:
+        print("{}".format(oid))
 else:
     high_part, low_part = options.oid.rsplit(".", 1)
     value = (oid2id[high_part] << 16) | int(low_part)
     print("%d (0x%x)" % (value, value))
+
+json_file.close()
